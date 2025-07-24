@@ -1,0 +1,32 @@
+[project]
+name = "sqlite-job"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Aakash Bakhle", email = "48802744+aakashb95@users.noreply.github.com" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "click>=8.2.1",
+    "pydantic>=2.11.7",
+    "python-dotenv>=1.1.1",
+    "rich>=14.0.0",
+    "sqlalchemy>=2.0.41",
+    "ty>=0.0.1a15",
+]
+
+[project.scripts]
+sqlite-job = "sqlite_job:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "sqlite-job",
+]
+
+[tool.uv.sources]
+sqlite-job = { workspace = true }
