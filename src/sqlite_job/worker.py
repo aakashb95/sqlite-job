@@ -15,14 +15,12 @@ class Worker:
         while True:
             job_id = self._get_job_id()
             if not job_id:
-                print("No job found, sleeping for 1 second")
                 time.sleep(1)
                 continue
             self._process_job(job_id)
 
     def _get_job_id(self):
         with get_session() as session:
-            print(f"Getting job from queue {self.queue_name}")
             job = (
                 session.query(Job)
                 .filter(
@@ -31,19 +29,21 @@ class Worker:
                 )
                 .first()
             )
-            print(f"Job: {job}")
             if not job:
-                print("No job found")
                 return None
             return job.id
 
     def _process_job(self, job_id: str):
+        # Get job data and deserialize outside of session context
         with get_session() as session:
             job = session.query(Job).filter(Job.id == job_id).first()
             job.status = JobStatus.RUNNING
             session.flush()
-            
-            function, args, kwargs = self.job_connection.deserialize_job(job)
+            # Access job.function while still in session to avoid detached instance
+            job_function_data = job.function
+
+        # Deserialize job outside of session to avoid locks during imports
+        function, args, kwargs = self.job_connection.deserialize_job(job_function_data)
 
         # Execute the job function
         result = function(*args, **kwargs)
@@ -52,4 +52,5 @@ class Worker:
             job = session.query(Job).filter(Job.id == job_id).first()
             job.status = JobStatus.COMPLETED
             job.result = pickle.dumps(result)
+            print(f"Job {job_id} completed with result {result}")
             session.flush()
