@@ -4,11 +4,13 @@ import time
 from sqlite_job.connections import SQLiteJob
 from sqlite_job.db import get_session
 from sqlite_job.models import Job, JobStatus
+from sqlite_job.settings import WorkerSettings
 
 
 class Worker:
-    def __init__(self, queue_name: str):
+    def __init__(self, queue_name: str, settings: WorkerSettings):
         self.queue_name = queue_name
+        self.settings = settings
         self.job_connection = SQLiteJob(queue_name)
 
     def run(self):
@@ -43,7 +45,7 @@ class Worker:
             job_function_data = job.function
 
         # Deserialize job outside of session to avoid locks during imports
-        function, args, kwargs = self.job_connection.deserialize_job(job_function_data)
+        function, args, kwargs = self.job_connection.deserialize_job(job_function_data, self.settings)
 
         # Execute the job function
         result = function(*args, **kwargs)

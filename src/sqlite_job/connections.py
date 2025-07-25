@@ -1,4 +1,3 @@
-import importlib
 import pickle
 
 from sqlite_job.db import get_session
@@ -35,28 +34,15 @@ class SQLiteJob:
 
         return job_id
 
-    def deserialize_job(self, job_or_data):
+    def deserialize_job(self, job_or_data, settings):
         unpickled_data = pickle.loads(job_or_data)
 
-        function_path = unpickled_data["f"]
+        function_name = unpickled_data["f"]
         args = unpickled_data["args"]
         kwargs = unpickled_data["kwargs"]
 
-        # Parse module.function_name format
-        if "." not in function_path:
-            raise ValueError(
-                f"Function path must be in 'module.function' format, got '{function_path}'"
-            )
-
-        module_name, function_name = function_path.rsplit(".", 1)
-
-        # Dynamically import the module and get the function
-        try:
-            module = importlib.import_module(module_name)
-            function = getattr(module, function_name)
-        except (ImportError, AttributeError) as e:
-            raise ValueError(f"Cannot import function '{function_path}': {e}")
-
+        # Use WorkerSettings to get function - this is the only way
+        function = settings.get_function(function_name)
         return function, args, kwargs
 
     def get_job_result(self, job_id: str):
@@ -64,4 +50,6 @@ class SQLiteJob:
             job = session.query(Job).filter(Job.id == job_id).first()
             if not job:
                 raise ValueError(f"Job with id {job_id} not found")
-            return job.result
+            if job.result is None:
+                return None
+            return pickle.loads(job.result)
