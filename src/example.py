@@ -14,22 +14,25 @@ def delayed_add(a, b, delay=1):
     return a + b
 
 
-# WorkerSettings with registered functions - THIS IS MANDATORY
+# WorkerSettings with registered functions and database path - MANDATORY
 class MyWorkerSettings(WorkerSettings):
     functions = [add, delayed_add]
 
 
 if __name__ == "__main__":
+    # Create settings with database path
+    settings = MyWorkerSettings("example_jobs.db")
+    
     # Enqueue jobs using simple function names
-    job_connection = SQLiteJob("default")
+    job_connection = SQLiteJob("default", settings)
     job_id = job_connection.enqueue("add", 12, 22)
     job_id2 = job_connection.enqueue("delayed_add", 123, 456, delay=2)
 
     print(f"Enqueued jobs: {job_id}, {job_id2}")
 
-    # Workers MUST be created with WorkerSettings
+    # Workers MUST be created with same WorkerSettings
     print("Starting worker...")
-    worker = Worker("default", MyWorkerSettings())
+    worker = Worker("default", settings)
     
     # Process a few jobs then exit for demo
     for _ in range(3):
