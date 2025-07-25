@@ -2,17 +2,19 @@ import pickle
 
 from sqlite_job.db import get_session
 from sqlite_job.models import Job, JobStatus, Queue
+from sqlite_job.settings import WorkerSettings
 
 
 class SQLiteJob:
-    def __init__(self, default_queue_name: str):
+    def __init__(self, default_queue_name: str, settings: WorkerSettings):
         self.default_queue_name = default_queue_name
+        self.settings = settings
 
     def enqueue(self, function: str, *args, **kwargs):
         data = {"f": function, "args": args, "kwargs": kwargs}
         pickled_data = pickle.dumps(data)
 
-        with get_session() as session:
+        with get_session(self.settings.database_path) as session:
             queue = (
                 session.query(Queue)
                 .filter(Queue.name == self.default_queue_name)
@@ -22,7 +24,7 @@ class SQLiteJob:
                 queue = Queue(name=self.default_queue_name)
                 session.add(queue)
         job_id = None
-        with get_session() as session:
+        with get_session(self.settings.database_path) as session:
             job = Job(
                 function=pickled_data,
                 queue_name=self.default_queue_name,
@@ -46,7 +48,7 @@ class SQLiteJob:
         return function, args, kwargs
 
     def get_job_result(self, job_id: str):
-        with get_session() as session:
+        with get_session(self.settings.database_path) as session:
             job = session.query(Job).filter(Job.id == job_id).first()
             if not job:
                 raise ValueError(f"Job with id {job_id} not found")

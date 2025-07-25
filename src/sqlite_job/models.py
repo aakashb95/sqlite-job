@@ -5,7 +5,7 @@ from enum import Enum
 from sqlalchemy import Column, DateTime, ForeignKey, String, Text
 from sqlalchemy.orm import declarative_base
 
-from sqlite_job.db import engine
+from sqlite_job.db import get_engine
 
 Base = declarative_base()
 
@@ -37,4 +37,7 @@ class Queue(Base):
     updated_at = Column(DateTime, default=datetime.utcnow)
 
 
-Base.metadata.create_all(engine)
+def create_tables(database_path: str):
+    """Create tables for the specified database."""
+    engine = get_engine(database_path)
+    Base.metadata.create_all(engine)

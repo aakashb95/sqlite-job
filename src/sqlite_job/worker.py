@@ -11,7 +11,7 @@ class Worker:
     def __init__(self, queue_name: str, settings: WorkerSettings):
         self.queue_name = queue_name
         self.settings = settings
-        self.job_connection = SQLiteJob(queue_name)
+        self.job_connection = SQLiteJob(queue_name, settings)
 
     def run(self):
         while True:
@@ -22,7 +22,7 @@ class Worker:
             self._process_job(job_id)
 
     def _get_job_id(self):
-        with get_session() as session:
+        with get_session(self.settings.database_path) as session:
             job = (
                 session.query(Job)
                 .filter(
@@ -37,7 +37,7 @@ class Worker:
 
     def _process_job(self, job_id: str):
         # Get job data and deserialize outside of session context
-        with get_session() as session:
+        with get_session(self.settings.database_path) as session:
             job = session.query(Job).filter(Job.id == job_id).first()
             job.status = JobStatus.RUNNING
             session.flush()
@@ -50,7 +50,7 @@ class Worker:
         # Execute the job function
         result = function(*args, **kwargs)
 
-        with get_session() as session:
+        with get_session(self.settings.database_path) as session:
             job = session.query(Job).filter(Job.id == job_id).first()
             job.status = JobStatus.COMPLETED
             job.result = pickle.dumps(result)
