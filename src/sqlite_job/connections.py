@@ -58,3 +58,10 @@ class SQLiteJob:
             raise ValueError(f"Cannot import function '{function_path}': {e}")
 
         return function, args, kwargs
+
+    def get_job_result(self, job_id: str):
+        with get_session() as session:
+            job = session.query(Job).filter(Job.id == job_id).first()
+            if not job:
+                raise ValueError(f"Job with id {job_id} not found")
+            return job.result
