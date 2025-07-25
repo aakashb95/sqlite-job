@@ -77,6 +77,7 @@ In production, you'll typically have two separate files:
 ```python
 from sqlite_job.connections import SQLiteJob
 from sqlite_job.settings import WorkerSettings
+import time
 
 # Define your functions
 def send_email(to, subject, body):
@@ -84,6 +85,7 @@ def send_email(to, subject, body):
     return f"Sent email to {to}"
 
 def process_payment(user_id, amount):
+    time.sleep(3)
     # your payment processing logic
     return f"Processed ${amount} for user {user_id}"
 
